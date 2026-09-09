@@ -188,15 +188,27 @@ exports.create = function (req, res, next) {
 };
 
 exports.destroy = function (req, res, next) {
-  Todo.findById(req.params.id, function (err, todo) {
+  // Validate ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).send('Invalid ID format');
+  }
 
-    try {
-      todo.remove(function (err, todo) {
-        if (err) return next(err);
-        res.redirect('/');
-      });
-    } catch (e) {
+  Todo.findById(req.params.id, function (err, todo) {
+    // Handle database errors
+    if (err) {
+      return next(err);
     }
+
+    // Handle missing document
+    if (!todo) {
+      return res.status(404).send('Todo not found');
+    }
+
+    // Now safe to remove the document
+    todo.remove(function (err, todo) {
+      if (err) return next(err);
+      res.redirect('/');
+    });
   });
 };
 
@@ -216,8 +228,23 @@ exports.edit = function (req, res, next) {
 };
 
 exports.update = function (req, res, next) {
-  Todo.findById(req.params.id, function (err, todo) {
+  // Validate ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).send('Invalid ID format');
+  }
 
+  Todo.findById(req.params.id, function (err, todo) {
+    // Handle database errors
+    if (err) {
+      return next(err);
+    }
+
+    // Handle missing document
+    if (!todo) {
+      return res.status(404).send('Todo not found');
+    }
+
+    // Now safe to update the document
     todo.content = req.body.content;
     todo.updated_at = Date.now();
     todo.save(function (err, todo, count) {
