@@ -238,6 +238,31 @@ function isBlank(str) {
   return (!str || /^\s*$/.test(str));
 }
 
+// Whitelist of valid moment.js locale codes to prevent path traversal attacks
+var VALID_LOCALES = [
+  'af', 'ar', 'ar-dz', 'ar-kw', 'ar-ly', 'ar-ma', 'ar-sa', 'ar-tn', 'az', 'be',
+  'bg', 'bm', 'bn', 'bo', 'br', 'bs', 'ca', 'cs', 'cv', 'cy', 'da', 'de', 'de-at',
+  'de-ch', 'dv', 'el', 'en', 'en-au', 'en-ca', 'en-gb', 'en-ie', 'en-il', 'en-nz',
+  'eo', 'es', 'es-do', 'es-us', 'et', 'eu', 'fa', 'fi', 'fo', 'fr', 'fr-ca', 'fr-ch',
+  'fy', 'gd', 'gl', 'gom-latn', 'gu', 'he', 'hi', 'hr', 'hu', 'hy-am', 'id', 'is',
+  'it', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 'ky', 'lb', 'lo', 'lt', 'lv',
+  'me', 'mi', 'mk', 'ml', 'mn', 'mr', 'ms', 'ms-my', 'mt', 'my', 'nb', 'ne', 'nl',
+  'nl-be', 'nn', 'pa-in', 'pl', 'pt', 'pt-br', 'ro', 'ru', 'sd', 'se', 'si', 'sk',
+  'sl', 'sq', 'sr', 'sr-cyrl', 'ss', 'sv', 'sw', 'ta', 'te', 'tet', 'tg', 'th',
+  'tl-ph', 'tlh', 'tr', 'tzl', 'tzm', 'tzm-latn', 'ug-cn', 'uk', 'ur', 'uz', 'uz-latn',
+  'vi', 'x-pseudo', 'yo', 'zh-cn', 'zh-hk', 'zh-tw'
+];
+
+function isValidLocale(locale) {
+  if (!locale || typeof locale !== 'string') {
+    return false;
+  }
+  // Normalize to lowercase for comparison
+  var normalizedLocale = locale.toLowerCase().trim();
+  // Check against whitelist
+  return VALID_LOCALES.indexOf(normalizedLocale) !== -1;
+}
+
 exports.import = function (req, res, next) {
   if (!req.files) {
     res.send('No files were uploaded.');
@@ -275,7 +300,13 @@ exports.import = function (req, res, next) {
     var item = what;
     if (!isBlank(what)) {
       if (!isBlank(when) && !isBlank(locale) && !isBlank(format)) {
-        console.log('setting locale ' + parts[1]);
+        // Validate locale against whitelist to prevent path traversal
+        if (!isValidLocale(locale)) {
+          console.log('Invalid locale rejected: ' + locale);
+          // Skip this entry or use default locale
+          locale = 'en';
+        }
+        console.log('setting locale ' + locale);
         moment.locale(locale);
         var d = moment(when);
         console.log('formatting ' + d);
