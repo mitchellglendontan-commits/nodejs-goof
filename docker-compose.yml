@@ -5,6 +5,9 @@ services:
     container_name: goof
     environment:
       - DOCKER=1
+      - MONGODB_USERNAME=goof_user
+      - MONGODB_PASSWORD=goof_password_change_in_production
+      - MONGODB_DATABASE=express-todo
     ports:
       - "3001:3001"
       - "9229:9229"
@@ -15,8 +18,10 @@ services:
   goof-mongo:
     container_name: goof-mongo
     image: mongo:3
-    ports:
-      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=goof_user
+      - MONGO_INITDB_ROOT_PASSWORD=goof_password_change_in_production
+      - MONGO_INITDB_DATABASE=express-todo
   good-mysql:
     container_name: goof-mysql
     image: mysql:5
