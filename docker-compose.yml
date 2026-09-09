@@ -5,23 +5,34 @@ services:
     container_name: goof
     environment:
       - DOCKER=1
+      - MYSQL_HOST=goof-mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-acme_app}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in environment}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-acme}
     ports:
       - "3001:3001"
       - "9229:9229"
     links:
       - goof-mongo
+      - goof-mysql
     depends_on:
       - goof-mongo
+      - goof-mysql
   goof-mongo:
     container_name: goof-mongo
     image: mongo:3
     ports:
       - "27017:27017"
-  good-mysql:
+  goof-mysql:
     container_name: goof-mysql
     image: mysql:5
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: acme
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in environment}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-acme}
+      MYSQL_USER: ${MYSQL_USER:-acme_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in environment}
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    # Port 3306 is NOT exposed to host - only accessible within Docker network
+    # This prevents external access to the database

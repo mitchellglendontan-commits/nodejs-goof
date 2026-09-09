@@ -12,3 +12,5 @@ npm-debug.log
 .idea/
 .dccache
 
+# Environment variables - never commit credentials
+.env
