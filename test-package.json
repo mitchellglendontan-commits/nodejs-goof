@@ -1,0 +1,7 @@
+{
+  "name": "security-test-runner",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "tap tests/mysql-credential-security.spec.js"
+  }
+}

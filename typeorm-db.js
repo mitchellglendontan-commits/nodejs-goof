@@ -3,20 +3,31 @@ var EntitySchema = typeorm.EntitySchema;
 
 const Users = require("./entity/Users")
 
-typeorm.createConnection({
+// Use environment variables for database credentials
+// Never use hardcoded credentials in production
+const dbConfig = {
   name: "mysql",
   type: "mysql",
-  host: "localhost",
-  port: 3306,
-  username: "root",
-  password: "root",
-  database: "acme",
+  host: process.env.MYSQL_HOST || "localhost",
+  port: parseInt(process.env.MYSQL_PORT || "3306", 10),
+  username: process.env.MYSQL_USER || "acme_app",
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE || "acme",
   synchronize: true,
   "logging": true,
   entities: [
     new EntitySchema(Users)
   ]
-}).then(() => {
+};
+
+// Validate that password is provided
+if (!dbConfig.password) {
+  console.error('CRITICAL: MYSQL_PASSWORD environment variable is not set');
+  console.error('Database connection cannot be established without credentials');
+  process.exit(1);
+}
+
+typeorm.createConnection(dbConfig).then(() => {
 
   const dbConnection = typeorm.getConnection('mysql')
 
