@@ -1,5 +1,6 @@
 var utils = require('../utils');
 var mongoose = require('mongoose');
+var bcrypt = require('bcryptjs');
 var Todo = mongoose.model('Todo');
 var User = mongoose.model('User');
 // TODO:
@@ -36,18 +37,47 @@ exports.index = function (req, res, next) {
 
 exports.loginHandler = function (req, res, next) {
   if (validator.isEmail(req.body.username)) {
-    User.find({ username: req.body.username, password: req.body.password }, function (err, users) {
-      if (users.length > 0) {
-        const redirectPage = req.body.redirectPage
-        const session = req.session
-        const username = req.body.username
-        return adminLoginSuccess(redirectPage, session, username, res)
-      } else {
-        return res.status(401).send()
+    // Find user by username only
+    User.findOne({ username: req.body.username }, function (err, user) {
+      if (err) {
+        console.error('Database error during login:', err);
+        return res.status(500).send();
       }
+      
+      if (!user) {
+        // User not found
+        return res.status(401).send();
+      }
+      
+      // Compare provided password with hashed password
+      bcrypt.compare(req.body.password, user.password, function(err, isMatch) {
+        if (err) {
+          console.error('Error comparing passwords:', err);
+          return res.status(500).send();
+        }
+        
+        if (isMatch) {
+          const redirectPage = req.body.redirectPage;
+          const session = req.session;
+          const username = req.body.username;
+          
+          // Check if password change is required
+          if (user.requirePasswordChange) {
+            session.requirePasswordChange = true;
+            session.username = username;
+            // Redirect to password change page (for now, just log and continue)
+            console.warn(`User ${username} requires password change but no password change flow implemented yet`);
+          }
+          
+          return adminLoginSuccess(redirectPage, session, username, res);
+        } else {
+          // Password doesn't match
+          return res.status(401).send();
+        }
+      });
     });
   } else {
-    return res.status(401).send()
+    return res.status(401).send();
   }
 };
 
