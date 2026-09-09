@@ -116,7 +116,7 @@ exports.isLoggedIn = function (req, res, next) {
   if (req.session.loggedIn === 1) {
     return next()
   } else {
-    return res.redirect('/')
+    return res.redirect('/login')
   }
 }
 
