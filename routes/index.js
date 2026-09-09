@@ -15,6 +15,7 @@ var validator = require('validator');
 var fileType = require('file-type');
 var AdmZip = require('adm-zip');
 var fs = require('fs');
+var path = require('path');
 
 // prototype-pollution
 var _ = require('lodash');
@@ -254,6 +255,28 @@ exports.import = function (req, res, next) {
   if (importedFileType["mime"] === zipFileExt["mime"]) {
     var zip = AdmZip(importFile.data);
     var extracted_path = "/tmp/extracted_files";
+    
+    // Validate ZIP entries to prevent path traversal attacks
+    var zipEntries = zip.getEntries();
+    for (var i = 0; i < zipEntries.length; i++) {
+      var entry = zipEntries[i];
+      var entryName = entry.entryName;
+      
+      // Normalize the entry name to resolve any relative path components
+      var normalizedEntryName = path.normalize(entryName).replace(/^(\.\.(\/|\\|$))+/, '');
+      
+      // Resolve the full extraction path
+      var fullPath = path.resolve(extracted_path, normalizedEntryName);
+      
+      // Ensure the resolved path is within the extraction directory
+      if (!fullPath.startsWith(path.resolve(extracted_path) + path.sep)) {
+        console.error('Zip Slip attempt detected: ' + entryName);
+        res.status(400).send('Invalid ZIP file: path traversal detected');
+        return;
+      }
+    }
+    
+    // Only extract if all entries are validated
     zip.extractAllTo(extracted_path, true);
     data = "No backup.txt file found";
     fs.readFile('backup.txt', 'ascii', function (err, data) {
